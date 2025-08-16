@@ -59,9 +59,7 @@ def get_post(post_id: str):
 # -------------------------
 @router.post("/")
 def create_post(post: PostCreate, user=Depends(get_current_user)):
-    """
-    Create a new post (requires login).
-    """
+    
     data = {
         "title": post.title,
         "content": post.content,
@@ -80,10 +78,7 @@ def create_post(post: PostCreate, user=Depends(get_current_user)):
 
 @router.put("/{post_id}")
 def update_post(post_id: str, post: PostUpdate, user=Depends(get_current_user)):
-    """
-    Update a post (only by author).
-    """
-    # check author
+
     existing = db.table("posts").select("author_id").eq(
         "id", post_id).single().execute()
     if not existing.data:
