@@ -4,12 +4,14 @@ from app.config import db
 from app.routes import auth
 from app.routes import posts
 from app.routes import comments
+from app.routes import likes
 
 app = FastAPI(title="Blogging API")
 
 app.include_router(auth.router)
 app.include_router(posts.router)
 app.include_router(comments.router)
+app.include_router(likes.router)
 
 @app.get("/")
 def root():
