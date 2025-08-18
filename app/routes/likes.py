@@ -4,9 +4,8 @@ from app.config import db
 
 router = APIRouter()
 
-# =============================
+
 # GET all likes on a post (public)
-# =============================
 
 
 @router.get("/posts/{post_id}/likes")
@@ -19,9 +18,8 @@ def get_likes(post_id: str):
         'message': "success"
     }
 
-# =============================
+
 # ADD like (auth required)
-# =============================
 
 
 @router.post("/posts/{post_id}/likes")
@@ -39,9 +37,8 @@ def add_like(post_id: str, user=Depends(get_current_user)):
     }).execute()
     return {'message': "success", "res": response.data}
 
-# =============================
+
 # REMOVE like (auth required)
-# =============================
 
 
 @router.delete("/posts/{post_id}/likes")
@@ -55,3 +52,12 @@ def remove_like(post_id: str, user=Depends(get_current_user)):
     db.table("likes").delete().eq("post_id", post_id).eq(
         "author_id", user.id).execute()
     return {"message": "Like removed"}
+
+
+#  checking does user liked!
+
+@router.get("/posts/{post_id}/likes/check")
+def check_like(post_id: str, user=Depends(get_current_user)):
+    existing = db.table("likes").select("id").eq(
+        "post_id", post_id).eq("author_id", user.id).execute()
+    return {"liked": bool(existing.data)}
