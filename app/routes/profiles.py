@@ -39,8 +39,8 @@ def update_profile(
         update_data["username"] = body["username"]
     if "bio" in body:
         update_data["bio"] = body["bio"]
-    if "avatar_url" in body:
-        update_data["avatar_url"] = body["avatar_url"]
+    if "image_url" in body:
+        update_data["image_url"] = body["image_url"]
 
     if not update_data:
         raise HTTPException(status_code=400, detail="No fields to update")

@@ -11,7 +11,7 @@ router = APIRouter()
 @router.get("/posts/{post_id}/comments")
 def get_comments(post_id: str):
     response = db.table("comments").select(
-        "*, profiles(username, avatar_url)"
+        "*, profiles(username, image_url)"
     ).eq("post_id", post_id).order("created_at", desc=True).execute()
     return {'message': "success", "res": response.data}
 

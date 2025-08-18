@@ -31,7 +31,7 @@ def get_all_posts():
     Get all posts (public).
     """
     response = db.table("posts").select(
-        "*, categories(name), profiles(username, avatar_url)"
+        "*, categories(name), profiles(username, image_url)"
     ).order("created_at", desc=True).execute()
 
     return {'message': "success", "res": response.data}
@@ -43,7 +43,7 @@ def get_post(post_id: str):
     Get a single post by ID (public).
     """
     response = db.table("posts").select(
-        "*, categories(name), profiles(username, avatar_url)"
+        "*, categories(name), profiles(username, image_url)"
     ).eq("id", post_id).single().execute()
 
     if not response.data:

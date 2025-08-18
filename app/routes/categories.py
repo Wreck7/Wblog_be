@@ -57,7 +57,7 @@ def delete_category(category_id: str, user=Depends(get_current_user)):
 @router.get("/feed")
 def get_feed(category_id: str | None = None):
     query = db.table("posts").select(
-        "*, profiles(username, avatar_url), categories(name)"
+        "*, profiles(username, image_url), categories(name)"
     ).order("created_at", desc=True)
 
     if category_id:

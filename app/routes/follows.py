@@ -48,7 +48,7 @@ def unfollow_user(user_id: str, user=Depends(get_current_user)):
 @router.get("/users/{user_id}/followers")
 def get_followers(user_id: str):
     response = db.table("follows").select(
-        "follower_id, profiles!follows_follower_id_fkey(username, avatar_url)"
+        "follower_id, profiles!follows_follower_id_fkey(username, image_url)"
     ).eq("following_id", user_id).execute()
     return {
         "count": len(response.data),
@@ -63,7 +63,7 @@ def get_followers(user_id: str):
 @router.get("/users/{user_id}/following")
 def get_following(user_id: str):
     response = db.table("follows").select(
-        "following_id, profiles!follows_following_id_fkey(username, avatar_url)"
+        "following_id, profiles!follows_following_id_fkey(username, image_url)"
     ).eq("follower_id", user_id).execute()
     return {
         "count": len(response.data),

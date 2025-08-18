@@ -11,7 +11,7 @@ router = APIRouter()
 @router.get("/bookmarks")
 def get_bookmarks(user=Depends(get_current_user)):
     response = db.table("bookmarks").select(
-        "id, post_id, posts(id, title, content, created_at, author_id, profiles(username, avatar_url))"
+        "id, post_id, posts(id, title, content, created_at, author_id, profiles(username, image_url))"
     ).eq("user_id", user.id).execute()
 
     return {
