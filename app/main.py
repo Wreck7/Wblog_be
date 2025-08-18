@@ -7,6 +7,7 @@ from app.routes import comments
 from app.routes import likes
 from app.routes import follows
 from app.routes import bookmarks
+from app.routes import categories
 
 app = FastAPI(title="Blogging API")
 
@@ -16,6 +17,7 @@ app.include_router(comments.router)
 app.include_router(likes.router)
 app.include_router(follows.router)
 app.include_router(bookmarks.router)
+app.include_router(categories.router)
 
 @app.get("/")
 def root():

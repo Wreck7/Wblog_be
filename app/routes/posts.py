@@ -7,9 +7,8 @@ from app.dependencies import get_current_user
 router = APIRouter(prefix="/posts", tags=["posts"])
 
 
-# -------------------------
 # SCHEMAS
-# -------------------------
+
 class PostCreate(BaseModel):
     title: str
     content: str
@@ -24,9 +23,8 @@ class PostUpdate(BaseModel):
     category_id: Optional[str] = None
 
 
-# -------------------------
 # PUBLIC ENDPOINTS
-# -------------------------
+
 @router.get("/")
 def get_all_posts():
     """
@@ -54,12 +52,11 @@ def get_post(post_id: str):
     return {'message': "success", "res": response.data}
 
 
-# -------------------------
 # PRIVATE ENDPOINTS
-# -------------------------
+
 @router.post("/")
 def create_post(post: PostCreate, user=Depends(get_current_user)):
-    
+
     data = {
         "title": post.title,
         "content": post.content,
