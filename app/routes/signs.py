@@ -63,6 +63,13 @@ class RefreshRequest(BaseModel):
 
 @router.post("/signup")
 def signup(data: SignupRequest):
+    existing_username = db.table("profiles").select(
+        "id").eq("username", data.username).execute()
+    if existing_username.data:
+        raise HTTPException(
+            status_code=400,
+            detail="Username already taken. Please choose another."
+        )
     try:
         response = db.auth.sign_up({
             "email": data.email,

@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from app.config import db
-from app.dependencies import get_current_user
+from app.dependencies import admin_required
 
 router = APIRouter()
 
@@ -16,7 +16,7 @@ def get_categories():
 # CREATE category (admin only)
 
 @router.post("/categories")
-def create_category(name: str, user=Depends(get_current_user)):
+def create_category(name: str, user=Depends(admin_required)):
     # Simple check: only admins can create
     if not user.user_metadata.get("is_admin", False):
         raise HTTPException(status_code=403, detail="Admin access required")
@@ -28,7 +28,7 @@ def create_category(name: str, user=Depends(get_current_user)):
 # UPDATE category (admin only)
 
 @router.put("/categories/{category_id}")
-def update_category(category_id: str, name: str, user=Depends(get_current_user)):
+def update_category(category_id: str, name: str, user=Depends(admin_required)):
     if not user.user_metadata.get("is_admin", False):
         raise HTTPException(status_code=403, detail="Admin access required")
 
@@ -42,7 +42,7 @@ def update_category(category_id: str, name: str, user=Depends(get_current_user))
 # DELETE category (admin only)
 
 @router.delete("/categories/{category_id}")
-def delete_category(category_id: str, user=Depends(get_current_user)):
+def delete_category(category_id: str, user=Depends(admin_required)):
     if not user.user_metadata.get("is_admin", False):
         raise HTTPException(status_code=403, detail="Admin access required")
 
