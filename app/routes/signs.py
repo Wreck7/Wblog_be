@@ -15,7 +15,6 @@ class SignupRequest(BaseModel):
     password: str
     username: str
     gender: Optional[str] = None
-    phone: Optional[str] = None
     image_url: Optional[str] = None
 
 
@@ -29,12 +28,53 @@ class RefreshRequest(BaseModel):
 
 
 # SIGNUP (auto login + profile)
+# @router.post("/signup")
+# def signup(data: SignupRequest):
+#     response = db.auth.sign_up({
+#         "email": data.email,
+#         "password": data.password
+#     })
+
+#     if not response.user:
+#         raise HTTPException(status_code=400, detail="Signup failed")
+
+#     user = response.user
+#     session = response.session
+
+#     # create profile in "profiles" with extra fields
+#     db.table("profiles").insert({
+#         "id": user.id,
+#         "username": data.username,
+#         "gender": data.gender,
+#         "image_url": data.image_url,
+#     }).execute()
+
+#     return {
+#         "access_token": session.access_token,
+#         "refresh_token": session.refresh_token,
+#         "user": {
+#             "id": user.id,
+#             "email": user.email,
+#             "username": data.username,
+#             "image_url": data.image_url,
+#             "gender": data.gender
+#         }
+#     }
+
 @router.post("/signup")
 def signup(data: SignupRequest):
-    response = db.auth.sign_up({
-        "email": data.email,
-        "password": data.password
-    })
+    try:
+        response = db.auth.sign_up({
+            "email": data.email,
+            "password": data.password
+        })
+    except Exception as e:
+        # db already checks duplicate emails
+        if "User already registered" in str(e):
+            raise HTTPException(
+                status_code=400, detail="Email already registered. Please login."
+            )
+        raise HTTPException(status_code=400, detail="Signup failed")
 
     if not response.user:
         raise HTTPException(status_code=400, detail="Signup failed")
@@ -42,13 +82,11 @@ def signup(data: SignupRequest):
     user = response.user
     session = response.session
 
-    # create profile in "profiles" with extra fields
+    # create profile in "profiles" if not already exists
     db.table("profiles").insert({
         "id": user.id,
         "username": data.username,
         "gender": data.gender,
-        "image_url": data.image_url,
-        "phone": data.phone
     }).execute()
 
     return {
@@ -59,8 +97,7 @@ def signup(data: SignupRequest):
             "email": user.email,
             "username": data.username,
             "image_url": data.image_url,
-            "gender": data.gender,
-            "phone": data.phone
+            "gender": data.gender
         }
     }
 
