@@ -62,7 +62,7 @@ class RefreshRequest(BaseModel):
 #     }
 
 @router.post("/signup")
-def signup(data: SignupRequest, file: UploadFile = File(...)):
+def signup(data: SignupRequest, file: UploadFile = File(None)):
     existing_username = db.table("profiles").select(
         "id").eq("username", data.username).execute()
     if existing_username.data:
@@ -88,10 +88,14 @@ def signup(data: SignupRequest, file: UploadFile = File(...)):
 
     user = response.user
     session = response.session
-    image_url = upload_image(file, folder=f"profiles/{user.id}")
+    if not session:
+        raise HTTPException(status_code=400, detail="Signup succeeded, but session not created")
+    image_url = None
+    if file:
+        image_url = upload_image(file, folder=f"profiles/{user.id}")
 
     # create profile in "profiles" if not already exists
-    db.table("profiles").insert({
+    db.table("profiles").upsert({
         "id": user.id,
         "username": data.username,
         "image_url": image_url,

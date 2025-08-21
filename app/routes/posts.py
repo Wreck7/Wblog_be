@@ -55,13 +55,17 @@ def get_post(post_id: str):
 # PRIVATE ENDPOINTS
 
 @router.post("/")
-def create_post(post: PostCreate, user=Depends(get_current_user),file: UploadFile = File(...)):
-
+def create_post(post: PostCreate, user=Depends(get_current_user),file: UploadFile = File(None)):
+    
+    cover_image_url = None
+    if file:
+        cover_image_url = upload_image(file, folder=f"posts/{user.id}")
+        
     data = {
         "title": post.title,
         "content": post.content,
-        "cover_image_url": upload_image(file, folder=f"profiles/{user.id}"),
-        "category_id": str(post.category_id) if post.category_id else None,
+        "cover_image_url": cover_image_url,
+        "category_id": post.category_id if post.category_id else None,
         "author_id": user.id,
     }
 
@@ -74,7 +78,7 @@ def create_post(post: PostCreate, user=Depends(get_current_user),file: UploadFil
 
 
 @router.put("/{post_id}")
-def update_post(post_id: str, post: PostUpdate, user=Depends(get_current_user)):
+def update_post(post_id: str, post: PostUpdate, user=Depends(get_current_user), file: UploadFile = File(None)):
 
     existing = db.table("posts").select("author_id").eq(
         "id", post_id).single().execute()
@@ -86,6 +90,10 @@ def update_post(post_id: str, post: PostUpdate, user=Depends(get_current_user)):
             status_code=403, detail="Not allowed to edit this post")
 
     update_data = {k: v for k, v in post.dict().items() if v is not None}
+    
+    if file:
+        image_url = upload_image(file, folder=f"posts/{user.id}")
+        update_data["cover_image_url"] = image_url
 
     response = db.table("posts").update(
         update_data).eq("id", post_id).execute()
