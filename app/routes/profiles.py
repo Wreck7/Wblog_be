@@ -1,6 +1,6 @@
-from fastapi import APIRouter, Depends, HTTPException, Body
+from fastapi import APIRouter, Depends, HTTPException, Body, File, UploadFile
 from app.config import db
-from app.dependencies import get_current_user
+from app.dependencies import get_current_user, upload_image
 
 router = APIRouter()
 
@@ -32,15 +32,16 @@ def get_my_profile(user=Depends(get_current_user)):
 @router.put("/profile/me")
 def update_profile(
     body: dict = Body(...),
-    user=Depends(get_current_user)
+    user=Depends(get_current_user),
+    file: UploadFile = File(...)
 ):
     update_data = {}
     if "username" in body:
         update_data["username"] = body["username"]
     if "bio" in body:
         update_data["bio"] = body["bio"]
-    if "image_url" in body:
-        update_data["image_url"] = body["image_url"]
+    if File:
+        update_data["image_url"] = upload_image(file, folder=f"profiles/{user.id}")
 
     if not update_data:
         raise HTTPException(status_code=400, detail="No fields to update")

@@ -1,8 +1,8 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from typing import List, Optional
 from pydantic import BaseModel
 from app.config import db
-from app.dependencies import get_current_user
+from app.dependencies import get_current_user, upload_image
 
 router = APIRouter(prefix="/posts", tags=["posts"])
 
@@ -55,12 +55,12 @@ def get_post(post_id: str):
 # PRIVATE ENDPOINTS
 
 @router.post("/")
-def create_post(post: PostCreate, user=Depends(get_current_user)):
+def create_post(post: PostCreate, user=Depends(get_current_user),file: UploadFile = File(...)):
 
     data = {
         "title": post.title,
         "content": post.content,
-        "cover_image_url": post.cover_image_url,
+        "cover_image_url": upload_image(file, folder=f"profiles/{user.id}"),
         "category_id": str(post.category_id) if post.category_id else None,
         "author_id": user.id,
     }

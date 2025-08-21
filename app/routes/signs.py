@@ -1,9 +1,9 @@
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, File, UploadFile
 from pydantic import BaseModel, EmailStr
 from typing import Optional
 from datetime import date
 from app.config import db
-from app.dependencies import get_current_user
+from app.dependencies import get_current_user, upload_image
 
 router = APIRouter()
 
@@ -62,7 +62,7 @@ class RefreshRequest(BaseModel):
 #     }
 
 @router.post("/signup")
-def signup(data: SignupRequest):
+def signup(data: SignupRequest, file: UploadFile = File(...)):
     existing_username = db.table("profiles").select(
         "id").eq("username", data.username).execute()
     if existing_username.data:
@@ -88,11 +88,13 @@ def signup(data: SignupRequest):
 
     user = response.user
     session = response.session
+    image_url = upload_image(file, folder=f"profiles/{user.id}")
 
     # create profile in "profiles" if not already exists
     db.table("profiles").insert({
         "id": user.id,
         "username": data.username,
+        "image_url": image_url,
         "gender": data.gender,
     }).execute()
 
@@ -103,7 +105,7 @@ def signup(data: SignupRequest):
             "id": user.id,
             "email": user.email,
             "username": data.username,
-            "image_url": data.image_url,
+            "image_url": image_url,
             "gender": data.gender
         }
     }
@@ -148,10 +150,3 @@ def refresh_token(data: RefreshRequest):
             "email": session.user.email
         }
     }
-
-
-# LOGOUT
-@router.post("/logout")
-def logout(user=Depends(get_current_user)):
-    db.auth.sign_out()
-    return {"message": "Logged out successfully"}
