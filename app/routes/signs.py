@@ -1,9 +1,9 @@
 
-from fastapi import APIRouter, HTTPException, Depends, File, UploadFile, Form
+from fastapi import APIRouter, HTTPException, Depends, File, UploadFile, Form, Request, Response
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel, EmailStr
 from typing import Optional
 from datetime import date
-
 from supabase import AuthApiError
 from app.config import db, db_admin
 from app.dependencies import get_current_user, upload_image
@@ -84,13 +84,6 @@ class RefreshRequest(BaseModel):
 #     }
 
 
-# class SignupRequest(BaseModel):
-#     email: EmailStr
-#     password: str
-#     username: str
-#     gender: Optional[str] = None
-
-
 @router.post("/signup")
 async def signup(
     email: EmailStr = Form(...),
@@ -151,17 +144,51 @@ async def signup(
             "gender": gender,
         }).execute()
 
-        return {
+        access_token = response.session.access_token
+        refresh_token = response.session.refresh_token
+        user = response.session.user
+
+        # Build response
+        resp = JSONResponse({
             "access_token": session.access_token,
             "refresh_token": session.refresh_token,
             "user": {
-                "id": new_user.id,
-                "email": new_user.email,
-                "username": username,
-                "image_url": image_url,
-                "gender": gender
+                "id": user.id,
+                "email": user.email,
+                "username": user.user_metadata.get("username"),
+                "gender": user.user_metadata.get("gender"),
             }
-        }
+        })
+
+        # Attach cookies
+        resp.set_cookie(
+            key="access_token",
+            value=access_token,
+            httponly=True,
+            secure=True,      # keep True in production (use HTTPS)
+            samesite="Lax"    # or "None" if cross-site frontend/backend
+        )
+        resp.set_cookie(
+            key="refresh_token",
+            value=refresh_token,
+            httponly=True,
+            secure=True,
+            samesite="Lax"
+        )
+
+        return resp
+
+        # return {
+        #     "access_token": session.access_token,
+        #     "refresh_token": session.refresh_token,
+        #     "user": {
+        #         "id": new_user.id,
+        #         "email": new_user.email,
+        #         "username": username,
+        #         "image_url": image_url,
+        #         "gender": gender
+        #     }
+        # }
 
     except Exception as e:
         # CLEANUP: If profile creation or image upload fails, delete the created user
@@ -192,25 +219,95 @@ def login(data: LoginRequest):
         raise HTTPException(status_code=400, detail="Invalid credentials")
 
     session = response.session
-    return {
+    access_token = response.session.access_token
+    refresh_token = response.session.refresh_token
+    user = response.session.user
+
+    # Build response
+    resp = JSONResponse({
         "access_token": session.access_token,
         "refresh_token": session.refresh_token,
         "user": {
-            "id": session.user.id,
-            "email": session.user.email
+            "id": user.id,
+            "email": user.email,
+            "username": user.user_metadata.get("username"),
+            "gender": user.user_metadata.get("gender"),
         }
-    }
+    })
+
+    # Attach cookies
+    resp.set_cookie(
+        key="access_token",
+        value=access_token,
+        httponly=True,
+        secure=True,      # keep True in production (use HTTPS)
+        samesite="Lax"    # or "None" if cross-site frontend/backend
+    )
+    resp.set_cookie(
+        key="refresh_token",
+        value=refresh_token,
+        httponly=True,
+        secure=True,
+        samesite="Lax"
+    )
+
+    return resp
+    # return {
+    #     "access_token": session.access_token,
+    #     "refresh_token": session.refresh_token,
+    #     "user": {
+    #         "id": session.user.id,
+    #         "email": session.user.email
+    #     }
+    # }
 
 
 # REFRESH TOKEN
-@router.post("/refresh")
-def refresh_token(data: RefreshRequest):
-    response = db.auth.refresh_session(data.refresh_token)
+# @router.post("/refresh")
+# def refresh_token(data: RefreshRequest):
+#     response = db.auth.refresh_session(data.refresh_token)
 
-    if not response.session:
+#     if not response.session:
+#         raise HTTPException(status_code=400, detail="Invalid refresh token")
+
+#     session = response.session
+#     return {
+#         "access_token": session.access_token,
+#         "refresh_token": session.refresh_token,
+#         "user": {
+#             "id": session.user.id,
+#             "email": session.user.email
+#         }
+#     }
+
+@router.post("/refresh")
+def refresh_token(request: Request, response: Response):
+    refresh_token = request.cookies.get("refresh_token")
+    if not refresh_token:
+        raise HTTPException(status_code=401, detail="No refresh token cookie")
+
+    session_response = db.auth.refresh_session(refresh_token)
+    if not session_response.session:
         raise HTTPException(status_code=400, detail="Invalid refresh token")
 
-    session = response.session
+    session = session_response.session
+
+    # set new cookies
+    response.set_cookie(
+        key="access_token",
+        value=session.access_token,
+        httponly=True,
+        samesite="lax",   # adjust if cross-site
+        secure=False      # set True in production with HTTPS
+    )
+    response.set_cookie(
+        key="refresh_token",
+        value=session.refresh_token,
+        httponly=True,
+        samesite="lax",
+        secure=False
+    )
+
     return {
         "access_token": session.access_token,
         "refresh_token": session.refresh_token,

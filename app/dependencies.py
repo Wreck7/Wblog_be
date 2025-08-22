@@ -1,5 +1,5 @@
 import uuid
-from fastapi import Depends, HTTPException, status, UploadFile
+from fastapi import Depends, HTTPException, status, UploadFile, Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from app.config import db, db_admin
 import jwt
@@ -9,18 +9,43 @@ security = HTTPBearer()
 JWT_SECRET = os.getenv("JWT_SECRET")
 
 
-def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
-    token = credentials.credentials
+# def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
+#     token = credentials.credentials
+
+#     try:
+#         # Verify token with db
+#         user = db.auth.get_user(token)
+
+#         if user.user is None:
+#             raise HTTPException(
+#                 status_code=status.HTTP_401_UNAUTHORIZED,
+#                 detail="Invalid or expired token"
+#             )
+#         return user.user
+
+#     except Exception:
+#         raise HTTPException(
+#             status_code=status.HTTP_401_UNAUTHORIZED,
+#             detail="Could not validate credentials"
+#         )
+
+
+def get_current_user(request: Request):
+    token = request.cookies.get("access_token")
+    if not token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Not authenticated"
+        )
 
     try:
-        # Verify token with db
         user = db.auth.get_user(token)
-
         if user.user is None:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Invalid or expired token"
             )
+        # print(user)
         return user.user
 
     except Exception:
@@ -28,7 +53,6 @@ def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(securit
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Could not validate credentials"
         )
-
 
 def admin_required(user=Depends(get_current_user)):
     if not user.user_metadata.get("is_admin"):
