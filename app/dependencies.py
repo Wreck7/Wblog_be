@@ -1,6 +1,6 @@
+import uuid
 from fastapi import Depends, HTTPException, status, UploadFile
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from uuid import uuid4
 from app.config import db, db_admin
 import jwt
 import os
@@ -61,30 +61,46 @@ def admin_required(user=Depends(get_current_user)):
 #     except Exception as e:
 #         raise HTTPException(status_code=500, detail=str(e))
 
-def upload_image(file: UploadFile, folder: str = "profiles"):
+async def upload_image(file: UploadFile, folder: str, user_id: str) -> str:
+    """
+    Upload an image to Supabase Storage and return its public URL.
+    """
     try:
-        # Read file bytes
-        file_bytes = file.file.read()
+        # 1. Read file content asynchronously
+        file_bytes = await file.read()
+        content_type = file.content_type
 
-        # Unique filename
-        ext = os.path.splitext(file.filename)[-1] or ".jpg"
-        filename = f"{uuid4()}{ext}"
-        file_path = f"{folder}/{filename}"
+        # 2. Determine extension
+        ext_map = {
+            "image/jpeg": ".jpeg",
+            "image/jpg": ".jpg",
+            "image/png": ".png",
+            "image/webp": ".webp",
+        }
+        ext = ext_map.get(content_type, ".jpg")
 
-        # Upload using service role client
-        res = db_admin.storage.from_("images").upload(
-            file_path,
-            file_bytes,
-            {"content-type": file.content_type}
+        # 3. Unique filename
+        filename = f"{uuid.uuid4()}{ext}"
+        file_path = f"{folder}/{user_id}/{filename}"  # folder/user_id/filename
+
+        # 4. Upload synchronously (remove await!)
+        upload_response = db_admin.storage.from_("images").upload(
+            path=file_path,
+            file=file_bytes,
+            file_options={"content-type": content_type}
         )
 
-        # If upload failed, res.error will have info
-        if res.error:
-            raise HTTPException(status_code=400, detail=f"Upload failed: {res.error.message}")
+        if not upload_response:
+            raise HTTPException(status_code=500, detail="Failed to upload image to Supabase.")
 
-        # Return public URL
-        url = db_admin.storage.from_("images").get_public_url(file_path)
-        return url
+        # 5. Get public URL
+        public_url = db_admin.storage.from_("images").get_public_url(file_path)
+
+        if not public_url:
+            raise HTTPException(status_code=500, detail="Failed to retrieve public URL for uploaded image.")
+        return public_url
 
     except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Upload failed: {str(e)}")
+        print(f"Error during image upload: {e}")
+        raise HTTPException(status_code=500, detail=f"Image upload failed: {str(e)}")
+    
