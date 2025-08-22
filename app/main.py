@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from app.config import db
+from fastapi.middleware.cors import CORSMiddleware
 
 from app.routes import auth
 from app.routes import posts
@@ -12,6 +13,21 @@ from app.routes import profiles
 from app.routes import signs
 
 app = FastAPI(title="Blogging API")
+
+origins = [
+    "http://localhost:5173",  # Vite
+    "http://localhost:3000",  # CRA
+    "http://127.0.0.1:5173",
+    "https://your-frontend-domain.com",  # production domain
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173"],  # list of allowed origins
+    allow_credentials=True,
+    allow_methods=["*"],    # or specify ["GET", "POST"]
+    allow_headers=["*"],    # or specify ["Authorization", "Content-Type"]
+)
 
 app.include_router(auth.router)
 app.include_router(posts.router)

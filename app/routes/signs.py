@@ -1,11 +1,12 @@
-from fastapi import APIRouter, HTTPException, Depends, File, UploadFile
+
+from fastapi import APIRouter, HTTPException, Depends, File, UploadFile, Form
 from pydantic import BaseModel, EmailStr
 from typing import Optional
 from datetime import date
 from app.config import db
 from app.dependencies import get_current_user, upload_image
 
-router = APIRouter()
+router = APIRouter(prefix="/auth", tags=["auth"])
 
 # MODELS
 
@@ -15,7 +16,7 @@ class SignupRequest(BaseModel):
     password: str
     username: str
     gender: Optional[str] = None
-    image_url: Optional[str] = None
+    # image_url: Optional[str] = None
 
 
 class LoginRequest(BaseModel):
@@ -27,26 +28,46 @@ class RefreshRequest(BaseModel):
     refresh_token: str
 
 
-# SIGNUP (auto login + profile)
+
 # @router.post("/signup")
-# def signup(data: SignupRequest):
-#     response = db.auth.sign_up({
-#         "email": data.email,
-#         "password": data.password
-#     })
+# def signup(data: SignupRequest, file: UploadFile = File(None)):
+#     existing_username = db.table("profiles").select(
+#         "id").eq("username", data.username).execute()
+#     if existing_username.data:
+#         raise HTTPException(
+#             status_code=400,
+#             detail="Username already taken. Please choose another."
+#         )
+#     try:
+#         response = db.auth.sign_up({
+#             "email": data.email,
+#             "password": data.password
+#         })
+#     except Exception as e:
+#         # db already checks duplicate emails
+#         if "User already registered" in str(e):
+#             raise HTTPException(
+#                 status_code=400, detail="Email already registered. Please login."
+#             )
+#         raise HTTPException(status_code=400, detail="Signup failed")
 
 #     if not response.user:
 #         raise HTTPException(status_code=400, detail="Signup failed")
 
 #     user = response.user
 #     session = response.session
+#     if not session:
+#         raise HTTPException(status_code=400, detail="Signup succeeded, but session not created")
+#     image_url = None
+#     if file:
+#         image_url = upload_image(file, folder=f"profiles/{user.id}")
 
-#     # create profile in "profiles" with extra fields
-#     db.table("profiles").insert({
+#     # create profile in "profiles" if not already exists
+#     db.table("profiles").upsert({
 #         "id": user.id,
 #         "username": data.username,
+#         "image_url": image_url,
 #         "gender": data.gender,
-#         "image_url": data.image_url,
 #     }).execute()
 
 #     return {
@@ -56,32 +77,46 @@ class RefreshRequest(BaseModel):
 #             "id": user.id,
 #             "email": user.email,
 #             "username": data.username,
-#             "image_url": data.image_url,
+#             "image_url": image_url,
 #             "gender": data.gender
 #         }
 #     }
 
+
+
+# class SignupRequest(BaseModel):
+#     email: EmailStr
+#     password: str
+#     username: str
+#     gender: Optional[str] = None
+
+
 @router.post("/signup")
-def signup(data: SignupRequest, file: UploadFile = File(None)):
-    existing_username = db.table("profiles").select(
-        "id").eq("username", data.username).execute()
+def signup(
+    email: EmailStr = Form(...),
+    password: str = Form(...),
+    username: str = Form(...),
+    gender: Optional[str] = Form(None),
+    file: UploadFile = File(None)
+):
+    # Check if username already exists
+    existing_username = db.table("profiles").select("id").eq("username", username).execute()
     if existing_username.data:
         raise HTTPException(
             status_code=400,
             detail="Username already taken. Please choose another."
         )
+
+    # Register user in Supabase Auth
     try:
         response = db.auth.sign_up({
-            "email": data.email,
-            "password": data.password
+            "email": email,
+            "password": password
         })
     except Exception as e:
-        # db already checks duplicate emails
         if "User already registered" in str(e):
-            raise HTTPException(
-                status_code=400, detail="Email already registered. Please login."
-            )
-        raise HTTPException(status_code=400, detail="Signup failed")
+            raise HTTPException(status_code=400, detail="Email already registered. Please login.")
+        raise HTTPException(status_code=400, detail=f"Signup failed: {str(e)}")
 
     if not response.user:
         raise HTTPException(status_code=400, detail="Signup failed")
@@ -90,16 +125,18 @@ def signup(data: SignupRequest, file: UploadFile = File(None)):
     session = response.session
     if not session:
         raise HTTPException(status_code=400, detail="Signup succeeded, but session not created")
+
+    # Upload image if provided
     image_url = None
     if file:
         image_url = upload_image(file, folder=f"profiles/{user.id}")
 
-    # create profile in "profiles" if not already exists
+    # Insert profile into "profiles" table
     db.table("profiles").upsert({
         "id": user.id,
-        "username": data.username,
+        "username": username,
         "image_url": image_url,
-        "gender": data.gender,
+        "gender": gender,
     }).execute()
 
     return {
@@ -108,12 +145,11 @@ def signup(data: SignupRequest, file: UploadFile = File(None)):
         "user": {
             "id": user.id,
             "email": user.email,
-            "username": data.username,
+            "username": username,
             "image_url": image_url,
-            "gender": data.gender
+            "gender": gender
         }
     }
-
 
 # LOGIN
 @router.post("/login")
