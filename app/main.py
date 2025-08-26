@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from fastapi.responses import ORJSONResponse
 from app.config import db
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -12,7 +13,7 @@ from app.routes import categories
 from app.routes import profiles
 from app.routes import signs
 
-app = FastAPI(title="Blogging API")
+app = FastAPI(title="Blogging API", default_response_class=ORJSONResponse)
 
 origins = [
     "http://localhost:5173",  # Vite
