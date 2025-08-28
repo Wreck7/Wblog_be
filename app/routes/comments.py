@@ -30,7 +30,7 @@ def add_comment(post_id: str, body: dict = Body(...), user=Depends(get_current_u
 # DELETE comment (auth + ownership)
 
 
-@router.delete("/comments/{comment_id}")
+@router.delete("posts/{comment_id}/comments")
 def delete_comment(comment_id: str, user=Depends(get_current_user)):
     comment = db.table("comments").select(
         "*").eq("id", comment_id).single().execute()
@@ -45,7 +45,7 @@ def delete_comment(comment_id: str, user=Depends(get_current_user)):
 # update comment (auth + ownership)
 
 
-@router.put("/comments/{comment_id}")
+@router.put("posts/{comment_id}/comments")
 def update_comment(comment_id: str, body: dict = Body(...), user=Depends(get_current_user)):
     # Check if comment exists
     comment = db.table("comments").select(
