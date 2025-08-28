@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
 from typing import List, Optional
 from pydantic import BaseModel
 from app.config import db
@@ -8,12 +8,6 @@ router = APIRouter(prefix="/posts", tags=["posts"])
 
 
 # SCHEMAS
-
-class PostCreate(BaseModel):
-    title: str
-    content: str
-    cover_image_url: Optional[str] = None
-    category_id: Optional[str] = None
 
 
 class PostUpdate(BaseModel):
@@ -54,18 +48,24 @@ def get_post(post_id: str):
 
 # PRIVATE ENDPOINTS
 
+
 @router.post("/")
-def create_post(post: PostCreate, user=Depends(get_current_user),file: UploadFile = File(None)):
-    
+async def create_post(
+    title: str = Form(...),
+    content: str = Form(...),
+    category_id: str = Form(None),
+    file: UploadFile = File(None),
+    user=Depends(get_current_user),
+):
     cover_image_url = None
     if file:
-        cover_image_url = upload_image(file, folder=f"posts/{user.id}")
-        
+        cover_image_url = await upload_image(file, folder=f"posts", user_id=user.id)
+
     data = {
-        "title": post.title,
-        "content": post.content,
+        "title": title,
+        "content": content,
         "cover_image_url": cover_image_url,
-        "category_id": post.category_id if post.category_id else None,
+        "category_id": category_id,
         "author_id": user.id,
     }
 
@@ -74,7 +74,7 @@ def create_post(post: PostCreate, user=Depends(get_current_user),file: UploadFil
     if not response.data:
         raise HTTPException(status_code=400, detail="Post creation failed")
 
-    return {'message': "success", "res": response.data[0]}
+    return {"message": "success", "res": response.data[0]}
 
 
 @router.put("/{post_id}")
@@ -90,7 +90,7 @@ def update_post(post_id: str, post: PostUpdate, user=Depends(get_current_user), 
             status_code=403, detail="Not allowed to edit this post")
 
     update_data = {k: v for k, v in post.dict().items() if v is not None}
-    
+
     if file:
         image_url = upload_image(file, folder=f"posts/{user.id}")
         update_data["cover_image_url"] = image_url

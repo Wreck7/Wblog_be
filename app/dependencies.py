@@ -30,28 +30,56 @@ def get_current_admin(credentials: HTTPAuthorizationCredentials = Depends(securi
         )
 
 
+# def get_current_user(request: Request):
+#     auth_header = request.headers.get("Authorization")
+#     token = auth_header.split(" ")[1]
+#     if not token:
+#         raise HTTPException(
+#             status_code=status.HTTP_401_UNAUTHORIZED,
+#             detail="Not authenticated"
+#         )
+
+#     try:
+#         user = db.auth.get_user(token)
+#         if user.user is None:
+#             raise HTTPException(
+#                 status_code=status.HTTP_401_UNAUTHORIZED,
+#                 detail="Invalid or expired token"
+#             )
+#         # print(user)
+#         return user.user
+
+#     except Exception:
+#         raise HTTPException(
+#             status_code=status.HTTP_401_UNAUTHORIZED,
+#             detail="Could not validate credentials"
+#         )
+
 def get_current_user(request: Request):
+    # auth_header = request.headers.get("Authorization")
+    # if not auth_header:
+    #     raise HTTPException(
+    #         status_code=status.HTTP_401_UNAUTHORIZED,
+    #         detail="Not authenticated"
+    #     )
+
+    # token = auth_header.split(" ")[1]
     token = request.cookies.get("access_token")
-    if not token:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Not authenticated"
-        )
 
     try:
-        user = db.auth.get_user(token)
+        user = db.auth.get_user(token)# <-- await here
+        print(user)
         if user.user is None:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Invalid or expired token"
             )
-        # print(user)
         return user.user
 
-    except Exception:
+    except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Could not validate credentials"
+            detail=f"Could not validate credentials, {e}"
         )
 
 def admin_required(user=Depends(get_current_admin)):
