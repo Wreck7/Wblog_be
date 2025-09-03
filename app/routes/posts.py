@@ -46,6 +46,27 @@ def get_post(post_id: str):
     return {'message': "success", "res": response.data}
 
 
+# get posts by user id
+@router.get("/all/{author_id}")
+def get_posts_by_author(author_id: str):
+    try:
+        response = (
+            db.table("posts")
+            .select("id, title, content, cover_image_url, created_at, profiles(username, image_url)")
+            .eq("author_id", author_id)
+            .order("created_at", desc=True)
+            .execute()
+        )
+
+        return {
+            "count": len(response.data),
+            "posts": response.data,
+            "message": "success"
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 # PRIVATE ENDPOINTS
 
 
