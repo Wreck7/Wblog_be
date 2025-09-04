@@ -1,8 +1,9 @@
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, status
 from typing import List, Optional
 from pydantic import BaseModel
 from app.config import db
 from app.dependencies import get_current_user, upload_image
+from fastapi.responses import JSONResponse
 
 router = APIRouter(prefix="/posts", tags=["posts"])
 
@@ -10,11 +11,11 @@ router = APIRouter(prefix="/posts", tags=["posts"])
 # SCHEMAS
 
 
-class PostUpdate(BaseModel):
-    title: Optional[str] = None
-    content: Optional[str] = None
-    cover_image_url: Optional[str] = None
-    category_id: Optional[str] = None
+# class PostUpdate(BaseModel):
+#     title: Optional[str] = None
+#     content: Optional[str] = None
+#     cover_image_url: Optional[str] = None
+#     category_id: Optional[str] = None
 
 
 # PUBLIC ENDPOINTS
@@ -29,6 +30,7 @@ def get_all_posts():
     ).order("created_at", desc=True).execute()
 
     return {'message': "success", "res": response.data}
+    # return JSONResponse({'message': "success", "res": response.data}, status_code=status.HTTP_200_OK)
 
 
 @router.get("/{post_id}")
@@ -98,27 +100,73 @@ async def create_post(
     return {"message": "success", "res": response.data[0]}
 
 
-@router.put("/{post_id}")
-def update_post(post_id: str, post: PostUpdate, user=Depends(get_current_user), file: UploadFile = File(None)):
+# @router.put("/{post_id}")
+# def update_post(post_id: str, post: PostUpdate, user=Depends(get_current_user), file: UploadFile = File(None)):
 
+#     existing = db.table("posts").select("author_id").eq(
+#         "id", post_id).single().execute()
+#     if not existing.data:
+#         raise HTTPException(status_code=404, detail="Post not found")
+
+#     if existing.data["author_id"] != user.id:
+#         raise HTTPException(
+#             status_code=403, detail="Not allowed to edit this post")
+
+#     update_data = {k: v for k, v in post.dict().items() if v is not None}
+
+#     if file:
+#         image_url = upload_image(file, folder=f"posts/{user.id}")
+#         update_data["cover_image_url"] = image_url
+
+#     response = db.table("posts").update(
+#         update_data).eq("id", post_id).execute()
+#     return {'message': "success", "res": response.data[0]} if response.data else {"message": "No changes"}
+
+@router.put("/{post_id}")
+async def update_post(
+    post_id: str,
+    title: str = Form(None),
+    content: str = Form(None),
+    category_id: str = Form(None),
+    file: UploadFile = File(None),
+    user=Depends(get_current_user),
+):
+    # Check if post exists
     existing = db.table("posts").select("author_id").eq(
         "id", post_id).single().execute()
     if not existing.data:
         raise HTTPException(status_code=404, detail="Post not found")
 
+    # Only author can update
     if existing.data["author_id"] != user.id:
         raise HTTPException(
             status_code=403, detail="Not allowed to edit this post")
 
-    update_data = {k: v for k, v in post.dict().items() if v is not None}
+    # Collect update data
+    update_data = {}
+    if title is not None:
+        update_data["title"] = title
+    if content is not None:
+        update_data["content"] = content
+    if category_id is not None:
+        update_data["category_id"] = category_id
 
+    # Handle file upload if provided
     if file:
-        image_url = upload_image(file, folder=f"posts/{user.id}")
-        update_data["cover_image_url"] = image_url
+        cover_image_url = await upload_image(file, folder=f"posts", user_id=user.id)
+        update_data["cover_image_url"] = cover_image_url
 
+    if not update_data:
+        raise HTTPException(status_code=400, detail="No fields to update")
+
+    # Update DB
     response = db.table("posts").update(
         update_data).eq("id", post_id).execute()
-    return {'message': "success", "res": response.data[0]} if response.data else {"message": "No changes"}
+
+    if not response.data:
+        raise HTTPException(status_code=400, detail="Post update failed")
+
+    return {"message": "success", "res": response.data[0]}
 
 
 @router.delete("/{post_id}")

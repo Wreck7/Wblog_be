@@ -45,7 +45,7 @@ def get_current_user(request: Request):
 
     try:
         user = db.auth.get_user(token)# <-- await here
-        print(user)
+        # print(user)
         if user.user is None:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
