@@ -8,14 +8,6 @@ from fastapi.responses import JSONResponse
 router = APIRouter(prefix="/posts", tags=["posts"])
 
 
-# SCHEMAS
-
-
-# class PostUpdate(BaseModel):
-#     title: Optional[str] = None
-#     content: Optional[str] = None
-#     cover_image_url: Optional[str] = None
-#     category_id: Optional[str] = None
 
 
 # PUBLIC ENDPOINTS
@@ -100,27 +92,6 @@ async def create_post(
     return {"message": "success", "res": response.data[0]}
 
 
-# @router.put("/{post_id}")
-# def update_post(post_id: str, post: PostUpdate, user=Depends(get_current_user), file: UploadFile = File(None)):
-
-#     existing = db.table("posts").select("author_id").eq(
-#         "id", post_id).single().execute()
-#     if not existing.data:
-#         raise HTTPException(status_code=404, detail="Post not found")
-
-#     if existing.data["author_id"] != user.id:
-#         raise HTTPException(
-#             status_code=403, detail="Not allowed to edit this post")
-
-#     update_data = {k: v for k, v in post.dict().items() if v is not None}
-
-#     if file:
-#         image_url = upload_image(file, folder=f"posts/{user.id}")
-#         update_data["cover_image_url"] = image_url
-
-#     response = db.table("posts").update(
-#         update_data).eq("id", post_id).execute()
-#     return {'message': "success", "res": response.data[0]} if response.data else {"message": "No changes"}
 
 @router.put("/{post_id}")
 async def update_post(
