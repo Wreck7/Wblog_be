@@ -13,14 +13,6 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 # MODELS
 
 
-class SignupRequest(BaseModel):
-    email: EmailStr
-    password: str
-    username: str
-    gender: Optional[str] = None
-    # image_url: Optional[str] = None
-
-
 class LoginRequest(BaseModel):
     email: str
     password: str
@@ -30,58 +22,6 @@ class RefreshRequest(BaseModel):
     refresh_token: str
 
 
-# @router.post("/signup")
-# def signup(data: SignupRequest, file: UploadFile = File(None)):
-#     existing_username = db.table("profiles").select(
-#         "id").eq("username", data.username).execute()
-#     if existing_username.data:
-#         raise HTTPException(
-#             status_code=400,
-#             detail="Username already taken. Please choose another."
-#         )
-#     try:
-#         response = db.auth.sign_up({
-#             "email": data.email,
-#             "password": data.password
-#         })
-#     except Exception as e:
-#         # db already checks duplicate emails
-#         if "User already registered" in str(e):
-#             raise HTTPException(
-#                 status_code=400, detail="Email already registered. Please login."
-#             )
-#         raise HTTPException(status_code=400, detail="Signup failed")
-
-#     if not response.user:
-#         raise HTTPException(status_code=400, detail="Signup failed")
-
-#     user = response.user
-#     session = response.session
-#     if not session:
-#         raise HTTPException(status_code=400, detail="Signup succeeded, but session not created")
-#     image_url = None
-#     if file:
-#         image_url = upload_image(file, folder=f"profiles/{user.id}")
-
-#     # create profile in "profiles" if not already exists
-#     db.table("profiles").upsert({
-#         "id": user.id,
-#         "username": data.username,
-#         "image_url": image_url,
-#         "gender": data.gender,
-#     }).execute()
-
-#     return {
-#         "access_token": session.access_token,
-#         "refresh_token": session.refresh_token,
-#         "user": {
-#             "id": user.id,
-#             "email": user.email,
-#             "username": data.username,
-#             "image_url": image_url,
-#             "gender": data.gender
-#         }
-#     }
 
 
 @router.post("/signup")
@@ -178,18 +118,6 @@ async def signup(
 
         return resp
 
-        # return {
-        #     "access_token": session.access_token,
-        #     "refresh_token": session.refresh_token,
-        #     "user": {
-        #         "id": new_user.id,
-        #         "email": new_user.email,
-        #         "username": username,
-        #         "image_url": image_url,
-        #         "gender": gender
-        #     }
-        # }
-
     except Exception as e:
         # CLEANUP: If profile creation or image upload fails, delete the created user
         if new_user:
@@ -252,33 +180,7 @@ def login(data: LoginRequest):
     )
 
     return resp
-    # return {
-    #     "access_token": session.access_token,
-    #     "refresh_token": session.refresh_token,
-    #     "user": {
-    #         "id": session.user.id,
-    #         "email": session.user.email
-    #     }
-    # }
 
-
-# REFRESH TOKEN
-# @router.post("/refresh")
-# def refresh_token(data: RefreshRequest):
-#     response = db.auth.refresh_session(data.refresh_token)
-
-#     if not response.session:
-#         raise HTTPException(status_code=400, detail="Invalid refresh token")
-
-#     session = response.session
-#     return {
-#         "access_token": session.access_token,
-#         "refresh_token": session.refresh_token,
-#         "user": {
-#             "id": session.user.id,
-#             "email": session.user.email
-#         }
-#     }
 
 @router.post("/refresh")
 def refresh_token(request: Request, response: Response):

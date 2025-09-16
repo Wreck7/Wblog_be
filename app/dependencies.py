@@ -67,28 +67,6 @@ def admin_required(user=Depends(get_current_admin)):
 
 # converting images to urls
 
-# def upload_image(file: UploadFile, folder: str = "uploads") -> str:
-#     try:
-#         # Generate unique filename
-#         file_ext = file.filename.split(".")[-1]
-#         unique_filename = f"{folder}/{uuid.uuid4()}.{file_ext}"
-
-#         # Upload to db bucket
-#         res = db.storage.from_("images").upload(
-#             unique_filename,
-#             file.file,
-#             {"content-type": file.content_type}
-#         )
-
-#         if res.get("error"):
-#             raise HTTPException(status_code=400, detail=res["error"]["message"])
-
-#         # Get public URL
-#         url = db.storage.from_("images").get_public_url(unique_filename)
-#         return url
-
-#     except Exception as e:
-#         raise HTTPException(status_code=500, detail=str(e))
 
 async def upload_image(file: UploadFile, folder: str, user_id: str) -> str:
     """
