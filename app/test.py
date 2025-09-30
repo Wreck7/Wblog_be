@@ -1,13 +1,12 @@
-# from supabase import create_client
-from app.config import db_admin as supabase
+from supabase import create_client
 import requests
 
 # Supabase project credentials
-# SUPABASE_URL = "https://cbmhooddclbrpopzrbxx.supabase.co/"
-# SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNibWhvb2RkY2xicnBvcHpyYnh4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxNzYwNTUsImV4cCI6MjA3MDc1MjA1NX0.wxK5XR1REp9TOApdM4licFNYsX99mdI7JZymvohdnYg"
+SUPABASE_URL = "https://cbmhooddclbrpopzrbxx.supabase.co/"
+SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNibWhvb2RkY2xicnBvcHpyYnh4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxNzYwNTUsImV4cCI6MjA3MDc1MjA1NX0.wxK5XR1REp9TOApdM4licFNYsX99mdI7JZymvohdnYg"
 
 # Create client
-# supabase = create_client(SUPABASE_URL, SUPABASE_ANON_KEY)
+supabase = create_client(SUPABASE_URL, SUPABASE_ANON_KEY)
 
 # ====== STEP 1: LOGIN USER ======
 email = "vishwagovula07@gmail.com"
