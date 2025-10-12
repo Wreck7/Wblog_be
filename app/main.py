@@ -24,7 +24,7 @@ origins = [
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],  # list of allowed origins
+    allow_origins=["http://localhost:5173", "https://wblog-fe.vercel.app"],  # list of allowed origins
     allow_credentials=True,
     allow_methods=["*"],    # or specify ["GET", "POST"]
     allow_headers=["*"],    # or specify ["Authorization", "Content-Type"]
